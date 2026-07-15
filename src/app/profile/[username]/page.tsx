@@ -1,3 +1,4 @@
+import { Suspense } from "react";
 import FollowButton from "@/components/FollowButton";
 import { cacheLife } from "next/cache";
 type ProfilePageProps = {
@@ -8,9 +9,15 @@ type ProfilePageProps = {
 export async function generateStaticParams() {
   return [{ username: "john_doe" }, { username: "jane_smith" }];
 }
-
-
 export default async function ProfilePage({ params }: ProfilePageProps) {
+  return (
+    <Suspense fallback={<p>Loading...</p>}>
+      <ProfileContent params={params} />
+    </Suspense>
+  );
+}
+
+ async function ProfileContent({ params }: ProfilePageProps) {
   "use cache";
   cacheLife({stale : 5 , revalidate : 15 , expire : 120});
   const { username } = await params;

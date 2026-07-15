@@ -1,4 +1,6 @@
 import LikeButton from "@/components/LikeButton";
+import RelatedPosts from "@/components/RelatedPosts";
+import { Suspense } from "react";
 type PostPageProps = {
   params: Promise<{
     id: string;
@@ -11,7 +13,11 @@ export default async function PostPage({ params }: PostPageProps) {
   if (id === "crash") {
     throw new Error("Simulated failure fetching post data");
   }
- 
+  const relatedPosts = [
+    { id: 1, delayMs: 3000 },
+    { id: 2, delayMs: 500 },
+    { id: 3, delayMs: 1500 },
+  ];
 
   const initialLikes = 10;
   return (
@@ -20,6 +26,10 @@ export default async function PostPage({ params }: PostPageProps) {
       <p>This is the content of post {id}.</p>
 
       <LikeButton intialLikes={initialLikes} />
+      <Suspense fallback={<p>Loading related posts…</p>}>
+        <RelatedPosts posts={relatedPosts} />
+      </Suspense>
     </main>
+
   );
 }
