@@ -1,5 +1,15 @@
 import { headers } from "next/headers";
-export default async function SettingsPage() {
+import { Suspense } from "react";
+
+export default function SettingsPage() {
+  return (
+    <Suspense fallback={<p style={{ padding: "2rem" }}>Loading settings…</p>}>
+      <SettingsContent />
+    </Suspense>
+  );
+}
+
+async function SettingsContent() {
   const headersList = await headers();
   const userAgent = headersList.get("user-agent") || "Unknown";
   const renderedAt = new Date().toISOString();
