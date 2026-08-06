@@ -20,9 +20,31 @@ export async function getCachedPosts() {
   "use cache";
   cacheLife({ stale: 30, revalidate: 60, expire: 3600 });
   cacheTag("posts");
-
-  // Simulates DB/network latency so you can observe cache hits vs misses
   await new Promise((resolve) => setTimeout(resolve, 300));
 
-  return MOCK_POSTS;
+  // Copy before sorting — MOCK_POSTS is module-scope, shared across every
+  // request (Mental Model #7). Sorting in place would silently reorder
+  // the source of truth every time anyone reads it. Copy, then sort.
+  return [...MOCK_POSTS].sort(
+    (a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()
+  );
+}
+let nextPostId = MOCK_POSTS.length + 1;
+
+export async function createPostRecord(data: { title: string; authorUsername: string }) {
+  const newPost: Post = {
+    id: nextPostId++,
+    title: data.title,
+    authorUsername: data.authorUsername,
+    createdAt: new Date().toISOString(),
+  };
+  MOCK_POSTS.push(newPost);
+  return newPost;
+}
+export async function deletePostRecord(id: number) {
+  const index = MOCK_POSTS.findIndex((p) => p.id === id);
+  if (index === -1) {
+    return { error: "Post not found" };
+  }
+  MOCK_POSTS.splice(index, 1);
 }
