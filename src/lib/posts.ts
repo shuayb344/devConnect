@@ -1,50 +1,91 @@
 import { cacheLife, cacheTag } from "next/cache";
+import { prisma } from "@/lib/prisma";
 
-type Post = {
+
+const HARDCODED_USER_ID = "cmsk4c1mu000066pofb2hqwzb";
+
+export type Post = {
   id: number;
   title: string;
   authorUsername: string;
   createdAt: string;
 };
+export type PostCursor = { id: number; createdAt: string };
 
-// TODO(Phase 2, later lesson): replace with a Prisma query against Postgres.
-// Keeping this as an in-memory mock for now so today's lesson is only
-// about caching + Route Handlers, not database setup yet.
-const MOCK_POSTS: Post[] = [
-  { id: 1, title: "Why React Server Components changed everything", authorUsername: "john_doe", createdAt: "2026-07-01T10:00:00Z" },
-  { id: 2, title: "Cursor pagination vs offset pagination", authorUsername: "jane_smith", createdAt: "2026-07-05T14:30:00Z" },
-  { id: 3, title: "Debugging hydration mismatches in production", authorUsername: "john_doe", createdAt: "2026-07-10T09:15:00Z" },
-];
+export type PaginatedPosts = {
+  posts: Post[];
+  nextCursor: PostCursor | null;
+};
 
-export async function getCachedPosts() {
+export async function getPaginatedPosts(cursor?: PostCursor): Promise<PaginatedPosts> {
+  const PAGE_SIZE = 5; // small on purpose, so you can actually see paging happen with little seed data
+
+  const posts = await prisma.post.findMany({
+    take: PAGE_SIZE + 1, // fetch one extra to detect "is there a next page"
+    ...(cursor
+      ? {
+          where: {
+            OR: [
+              { createdAt: { lt: cursor.createdAt } },
+              { createdAt: cursor.createdAt, id: { lt: cursor.id } },
+            ],
+          },
+        }
+      : {}),
+    orderBy: [{ createdAt: "desc" }, { id: "desc" }],
+    include: { author: { select: { username: true } } },
+  });
+
+  const hasMore = posts.length > PAGE_SIZE;
+  const pageItems = hasMore ? posts.slice(0, PAGE_SIZE) : posts;
+
+  const shaped: Post[] = pageItems.map((post) => ({
+    id: post.id,
+    title: post.title,
+    authorUsername: post.author.username,
+    createdAt: post.createdAt.toISOString(),
+  }));
+
+  const last = pageItems[pageItems.length - 1];
+  const nextCursor = hasMore && last ? { id: last.id, createdAt: last.createdAt.toISOString() } : null;
+
+  return { posts: shaped, nextCursor };
+}
+export async function getCachedPosts(): Promise<Post[]> {
   "use cache";
   cacheLife({ stale: 30, revalidate: 60, expire: 3600 });
   cacheTag("posts");
-  await new Promise((resolve) => setTimeout(resolve, 300));
 
-  // Copy before sorting — MOCK_POSTS is module-scope, shared across every
-  // request (Mental Model #7). Sorting in place would silently reorder
-  // the source of truth every time anyone reads it. Copy, then sort.
-  return [...MOCK_POSTS].sort(
-    (a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()
-  );
-}
-let nextPostId = MOCK_POSTS.length + 1;
+  const posts = await prisma.post.findMany({
+    orderBy: { createdAt: "desc" },
+    include: { author: { select: { username: true } } },
+  });
 
-export async function createPostRecord(data: { title: string; authorUsername: string }) {
-  const newPost: Post = {
-    id: nextPostId++,
-    title: data.title,
-    authorUsername: data.authorUsername,
-    createdAt: new Date().toISOString(),
-  };
-  MOCK_POSTS.push(newPost);
-  return newPost;
+  // Reshape Prisma's nested { author: { username } } into the flat
+  // shape PostCard already expects — keeps the DB structure decoupled
+  // from the UI's data contract.
+  return posts.map((post) => ({
+    id: post.id,
+    title: post.title,
+    authorUsername: post.author.username,
+    createdAt: post.createdAt.toISOString(),
+  }));
 }
+
+export async function createPostRecord(data: { title: string }) {
+  return prisma.post.create({
+    data: {
+      title: data.title,
+      authorId: HARDCODED_USER_ID,
+    },
+  });
+}
+
 export async function deletePostRecord(id: number) {
-  const index = MOCK_POSTS.findIndex((p) => p.id === id);
-  if (index === -1) {
+  try {
+    await prisma.post.delete({ where: { id } });
+    return {};
+  } catch {
     return { error: "Post not found" };
   }
-  MOCK_POSTS.splice(index, 1);
 }

@@ -27,7 +27,7 @@ export async function createPost(
   }
 
   // TODO(Phase 3, Lesson 16): hardcoded until real auth exists.
-  await createPostRecord({ title: parsed.data.title, authorUsername: "current_user" });
+  await createPostRecord({ title: parsed.data.title,  });
 
   updateTag("posts");
   return { success: true };
