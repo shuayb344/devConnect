@@ -1,25 +1,35 @@
 "use client";
+
 import { useState } from "react";
+
 type LikeButtonProps = {
-  intialLikes: number;
-}
+  initialLikes: number;
+};
 
-export default function LikeButton({ intialLikes }: LikeButtonProps) {
-const [likes, setLikes] = useState(intialLikes);
-const [isLiked, setIsLiked] = useState(false);
+export default function LikeButton({ initialLikes }: LikeButtonProps) {
+  const [likes, setLikes] = useState(initialLikes);
+  const [isLiked, setIsLiked] = useState(false);
 
-const handleLike = () =>{
-  if(isLiked) {
-    setLikes ((prevLikes) => prevLikes - 1);
-  } else {
-    setLikes ((prevLikes) => prevLikes + 1);
-  }
-  setIsLiked((prevIsLiked) => !prevIsLiked);
-}
- return (
-      <button onClick={handleLike} className="px-4 py-2 bg-blue-500 text-white rounded">
-      {isLiked ? "♥" : "♡"} {likes} likes
+  const handleLike = () => {
+    if (isLiked) {
+      setLikes((prev) => prev - 1);
+    } else {
+      setLikes((prev) => prev + 1);
+    }
+    setIsLiked((prev) => !prev);
+  };
+
+  return (
+    <button
+      onClick={handleLike}
+      className={`inline-flex items-center gap-1.5 rounded-md px-3 py-1.5 text-sm font-medium transition-all ${
+        isLiked
+          ? "bg-rose-500/20 text-rose-400 border border-rose-500/30"
+          : "bg-neutral-800 text-neutral-300 hover:bg-neutral-700 border border-neutral-700"
+      }`}
+    >
+      <span className="text-base">{isLiked ? "❤️" : "🤍"}</span>
+      <span>{likes} {likes === 1 ? "like" : "likes"}</span>
     </button>
-
- )
+  );
 }
