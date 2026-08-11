@@ -1,17 +1,17 @@
 "use server";
 
 import { z } from "zod";
-import { updateTag } from "next/cache";
+import { revalidatePath } from "next/cache";
 import { createPostRecord, deletePostRecord } from "@/lib/posts";
 
 const CreatePostSchema = z.object({
   title: z
-  .string()
-  .trim()
-  .refine((val) => val.replace(/\s/g, "").length >= 3, {
-    message: "Title must contain at least 3 non-space characters",
-  })
-  .max(120),
+    .string()
+    .trim()
+    .refine((val) => val.replace(/\s/g, "").length >= 3, {
+      message: "Title must contain at least 3 non-space characters",
+    })
+    .max(120),
 });
 
 export type ActionState = { error?: string; success?: boolean };
@@ -27,9 +27,9 @@ export async function createPost(
   }
 
   // TODO(Phase 3, Lesson 16): hardcoded until real auth exists.
-  await createPostRecord({ title: parsed.data.title,  });
+  await createPostRecord({ title: parsed.data.title, });
 
-  updateTag("posts");
+  revalidatePath("/");
   return { success: true };
 }
 
@@ -37,15 +37,15 @@ export async function deletePost(
   _prevState: ActionState,
   formData: FormData
 ): Promise<ActionState> {
- const postId = Number(formData.get("id"));
-if (!Number.isInteger(postId)) {
-  return { error: "Invalid post ID" };
-}
+  const postId = Number(formData.get("id"));
+  if (!Number.isInteger(postId)) {
+    return { error: "Invalid post ID" };
+  }
 
   const result = await deletePostRecord(postId);
-    if (result?.error) {
-      return { error: result.error };
-    }
-    updateTag("posts");
-    return { success: true };
+  if (result?.error) {
+    return { error: result.error };
+  }
+  revalidatePath("/");
+  return { success: true };
 }
