@@ -1,3 +1,17 @@
+import dns from "node:dns";
+
+if (typeof window === "undefined" && dns && dns.lookup) {
+  const origLookup = dns.lookup;
+  // @ts-ignore
+  dns.lookup = (hostname: any, options: any, callback: any) => {
+    if (typeof options === "function") {
+      callback = options;
+      options = {};
+    }
+    return origLookup(hostname, { ...options, family: 4 }, callback);
+  };
+}
+
 import { PrismaClient } from "@/generated/prisma/client";
 import { PrismaPg } from "@prisma/adapter-pg";
 
