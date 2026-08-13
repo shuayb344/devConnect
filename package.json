@@ -3,19 +3,21 @@
   "version": "0.1.0",
   "private": true,
   "scripts": {
-    "dev": "NODE_OPTIONS='--dns-result-order=ipv4first' next dev",
-    "build": "NODE_OPTIONS='--dns-result-order=ipv4first' next build",
-    "start": "next start",
+    "dev": "PATH=\"$HOME/.nvm/versions/node/v22.23.2/bin:$PATH\" NODE_OPTIONS='--dns-result-order=ipv4first' next dev --webpack",
+    "build": "PATH=\"$HOME/.nvm/versions/node/v22.23.2/bin:$PATH\" NODE_OPTIONS='--dns-result-order=ipv4first' next build --webpack",
+    "start": "PATH=\"$HOME/.nvm/versions/node/v22.23.2/bin:$PATH\" next start",
     "lint": "eslint"
   },
   "dependencies": {
     "@prisma/adapter-pg": "^7.9.1",
     "@prisma/client": "^7.9.1",
     "@types/pg": "^8.21.0",
+    "better-auth": "^1.6.27",
     "next": "16.2.10",
     "pg": "^8.22.0",
     "react": "19.2.4",
     "react-dom": "19.2.4",
+    "server-only": "^0.0.1",
     "ws": "^8.21.3"
   },
   "devDependencies": {
