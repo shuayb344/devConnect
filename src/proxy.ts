@@ -1,25 +1,24 @@
 import { NextResponse } from "next/server";
 import type { NextRequest } from "next/server";
+import { getSessionCookie } from "better-auth/cookies";
 
-// TODO(Lesson 16): this checks for a placeholder cookie only.
-// Real session validation (signature check, expiry, etc.) comes with Auth.js.
 const PROTECTED_PREFIXES = ["/dashboard", "/settings", "/profile/edit"];
 
 export default function proxy(request: NextRequest) {
   const { pathname } = request.nextUrl;
-  const session = request.cookies.get("devconnect_session");
+  const sessionCookie = getSessionCookie(request);
 
   const isProtected = PROTECTED_PREFIXES.some((prefix) =>
     pathname.startsWith(prefix)
   );
 
-  if (isProtected && !session) {
+  if (isProtected && !sessionCookie) {
     const loginUrl = new URL("/login", request.url);
     loginUrl.searchParams.set("redirectedFrom", pathname);
     return NextResponse.redirect(loginUrl);
   }
 
-  if (pathname === "/login" && session) {
+  if (pathname === "/login" && sessionCookie) {
     return NextResponse.redirect(new URL("/dashboard", request.url));
   }
 
