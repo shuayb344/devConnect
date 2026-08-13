@@ -1,4 +1,6 @@
+import { Suspense } from "react";
 import Link from "next/link";
+import AuthStatus from "./AuthStatus";
 
 export default function Nav() {
   return (
@@ -20,14 +22,11 @@ export default function Nav() {
           <Link href="/settings" className="hover:text-white transition-colors">
             Settings
           </Link>
-          <Link
-            href="/login"
-            className="rounded-full bg-blue-600 px-3 py-1 text-xs font-semibold text-white hover:bg-blue-500 transition-colors"
-          >
-            Log in
-          </Link>
+          <Suspense fallback={<span className="text-xs text-neutral-500">...</span>}>
+            <AuthStatus />
+          </Suspense>
         </div>
       </div>
     </header>
-  );  
+  );
 }

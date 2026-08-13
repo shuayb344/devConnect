@@ -28,8 +28,8 @@ export default function LikeButton({ initialLikes }: LikeButtonProps) {
           : "bg-neutral-800 text-neutral-300 hover:bg-neutral-700 border border-neutral-700"
       }`}
     >
-      <span className="text-base">{isLiked ? "❤️" : "🤍"}</span>
-      <span>{likes} {likes === 1 ? "like" : "likes"}</span>
+      <span className="text-base">{isLiked ? "Liked" : "Like"}</span>
+      <span>{likes}</span>
     </button>
   );
 }
