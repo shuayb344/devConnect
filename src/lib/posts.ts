@@ -1,8 +1,9 @@
 import { cacheLife, cacheTag } from "next/cache";
 import { prisma } from "@/lib/prisma";
+import { requireUser } from "@/lib/dal";
 
 
-const HARDCODED_USER_ID = "cmsk4c1mu000066pofb2hqwzb";
+
 
 export type Post = {
   id: number;
@@ -73,19 +74,29 @@ export async function getCachedPosts(): Promise<Post[]> {
 }
 
 export async function createPostRecord(data: { title: string }) {
+  const user = await requireUser();
   return prisma.post.create({
     data: {
       title: data.title,
-      authorId: HARDCODED_USER_ID,
+      authorId: user.id,
     },
   });
 }
 
+
 export async function deletePostRecord(id: number) {
-  try {
-    await prisma.post.delete({ where: { id } });
-    return {};
-  } catch {
+  const user = await requireUser();
+
+  const post = await prisma.post.findUnique({ where: { id } });
+
+  if (!post) {
     return { error: "Post not found" };
   }
+
+  if (post.authorId !== user.id) {
+    return { error: "You can only delete your own posts" };
+  }
+
+  await prisma.post.delete({ where: { id } });
+  return {};
 }

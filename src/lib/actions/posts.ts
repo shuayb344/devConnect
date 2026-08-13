@@ -26,8 +26,11 @@ export async function createPost(
     return { error: parsed.error.issues[0].message };
   }
 
-  // TODO(Phase 3, Lesson 16): hardcoded until real auth exists.
-  await createPostRecord({ title: parsed.data.title, });
+    try {
+    await createPostRecord({ title: parsed.data.title });
+  } catch {
+    return { error: "You must be logged in to create a post." };
+  }
 
   revalidatePath("/");
   return { success: true };
@@ -42,9 +45,13 @@ export async function deletePost(
     return { error: "Invalid post ID" };
   }
 
-  const result = await deletePostRecord(postId);
-  if (result?.error) {
-    return { error: result.error };
+    try {
+    const result = await deletePostRecord(postId);
+    if (result?.error) {
+      return { error: result.error };
+    }
+  } catch {
+    return { error: "You must be logged in to delete a post." };
   }
   revalidatePath("/");
   return { success: true };
