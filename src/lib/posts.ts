@@ -3,7 +3,8 @@ import { prisma } from "@/lib/prisma";
 import { requireUser } from "@/lib/dal";
 
 
-
+const MAX_PAGE_SIZE = 20;
+const DEFAULT_PAGE_SIZE = 5;
 
 export type Post = {
   id: number;
@@ -18,8 +19,8 @@ export type PaginatedPosts = {
   nextCursor: PostCursor | null;
 };
 
-export async function getPaginatedPosts(cursor?: PostCursor): Promise<PaginatedPosts> {
-  const PAGE_SIZE = 5; // small on purpose, so you can actually see paging happen with little seed data
+export async function getPaginatedPosts(cursor?: PostCursor , requestedPageSize: number = DEFAULT_PAGE_SIZE): Promise<PaginatedPosts> {
+  const PAGE_SIZE = Math.min(Math.max(requestedPageSize, 1), MAX_PAGE_SIZE);
 
   const posts = await prisma.post.findMany({
     take: PAGE_SIZE + 1, // fetch one extra to detect "is there a next page"
