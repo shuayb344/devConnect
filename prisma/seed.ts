@@ -1,17 +1,3 @@
-import dns from "node:dns";
-
-if (typeof window === "undefined" && dns && dns.lookup) {
-  const origLookup = dns.lookup;
-  // @ts-ignore
-  dns.lookup = (hostname: any, options: any, callback: any) => {
-    if (typeof options === "function") {
-      callback = options;
-      options = {};
-    }
-    return origLookup(hostname, { ...options, family: 4 }, callback);
-  };
-}
-
 import { prisma } from "../src/lib/prisma";
 
 const HARDCODED_USER_ID = "cmsk4c1mu000066pofb2hqwzb";
