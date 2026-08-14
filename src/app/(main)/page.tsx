@@ -21,7 +21,8 @@ export default function HomePage() {
 
 async function FeedContent() {
   const { posts, nextCursor } = await getPaginatedPosts();
-  return <PostFeed initialPosts={posts} initialCursor={nextCursor} />;
+  const feedKey = `${posts[0]?.id ?? "empty"}-${posts.length}-${nextCursor?.id ?? "end"}`;
+  return <PostFeed key={feedKey} initialPosts={posts} initialCursor={nextCursor} />;
 }
 
 function FeedSkeleton() {

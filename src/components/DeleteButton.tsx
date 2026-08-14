@@ -1,11 +1,24 @@
 "use client";
 
-import { useActionState } from "react";
-import { deletePost , type ActionState } from "@/lib/actions/posts";
+import { useActionState, useEffect } from "react";
+import { useRouter } from "next/navigation";
+import { deletePost, type ActionState } from "@/lib/actions/posts";
 const initialState: ActionState = {};
-export default function DeleteButton({ postId }: { postId: number }) {
- 
+export default function DeleteButton({
+  postId,
+  onDeleted,
+}: {
+  postId: number;
+  onDeleted?: () => void;
+}) {
+  const router = useRouter();
   const [state, formAction, isPending] = useActionState(deletePost, initialState);
+
+  useEffect(() => {
+    if (!state.success) return;
+    onDeleted?.();
+    router.refresh();
+  }, [state.success, onDeleted, router]);
 
   return (
     <form action={formAction}>

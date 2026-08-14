@@ -9,14 +9,20 @@ export type PostCardProps = {
 };
  
 
-export default  function PostCard({ post }: { post: PostCardProps }) {
+export default function PostCard({
+  post,
+  onDeleted,
+}: {
+  post: PostCardProps;
+  onDeleted?: (postId: number) => void;
+}) {
 
  
   return (
     <div className="rounded-lg border border-neutral-800 bg-neutral-900 p-4">
       <div className="flex items-center justify-between">
       <p className="text-sm text-neutral-400">Post #{post.id}</p>
-      <DeleteButton postId={post.id} />
+      <DeleteButton postId={post.id} onDeleted={() => onDeleted?.(post.id)} />
       </div>
       <div className="mt-2">
       </div>

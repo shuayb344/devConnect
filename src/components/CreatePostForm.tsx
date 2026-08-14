@@ -1,15 +1,24 @@
 "use client";
 
-import { useActionState } from "react";
-import { type ActionState, createPost, } from "@/lib/actions/posts";
+import { useActionState, useEffect, useRef } from "react";
+import { useRouter } from "next/navigation";
+import { type ActionState, createPost } from "@/lib/actions/posts";
 
 const initialState: ActionState = {};
 
 export default function CreatePostForm() {
+  const router = useRouter();
+  const formRef = useRef<HTMLFormElement>(null);
   const [state, formAction, isPending] = useActionState(createPost, initialState);
 
+  useEffect(() => {
+    if (!state.success) return;
+    formRef.current?.reset();
+    router.refresh();
+  }, [state.success, router]);
+
   return (
-    <form action={formAction} className="flex flex-col gap-2 rounded-lg border border-neutral-800 bg-neutral-900 p-4">
+    <form ref={formRef} action={formAction} className="flex flex-col gap-2 rounded-lg border border-neutral-800 bg-neutral-900 p-4">
       <label htmlFor="title" className="text-sm text-neutral-400">New post title</label>
       <input
         id="title"

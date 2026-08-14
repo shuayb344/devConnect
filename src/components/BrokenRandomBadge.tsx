@@ -1,26 +1,15 @@
 "use client";
- 
-import { useState, useEffect } from "react";
- 
-// FIXED. The key idea: render something DETERMINISTIC (same on server
-// and client) on the FIRST render, then compute the random value only
-// AFTER hydration has already completed, inside useEffect — which, as
-// established in Lesson 3, runs strictly after the component has
-// mounted and matched against the server HTML. This means the value
-// used DURING hydration is identical on both sides (null/placeholder),
-// so there's nothing to mismatch. The random value then appears a
-// moment later via a normal state update — a SEPARATE render, not
-// part of the hydration comparison at all.
+import { useId } from "react";
+
+// Render a deterministic value so server and client output always match.
 export default function BrokenRandomBadge() {
-  const [value, setValue] = useState<string | null>(null);
- 
-  useEffect(() => {
-    setValue(Math.random().toFixed(4));
-  }, []);
+  const id = useId();
+  const hash = Array.from(id).reduce((acc, ch) => acc + ch.charCodeAt(0), 0);
+  const value = (hash % 10000).toString().padStart(4, "0");
  
   return (
     <span className="rounded bg-green-900 px-2 py-1 text-green-200">
-      Random: {value ?? "…"}
+      Stable: {value}
     </span>
   );
 }
