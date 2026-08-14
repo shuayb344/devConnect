@@ -1,7 +1,7 @@
 import { cacheLife, cacheTag } from "next/cache";
 import { prisma } from "@/lib/prisma";
 import { requireUser } from "@/lib/dal";
-
+import { canDeletePost } from "@/lib/authorization";
 
 const MAX_PAGE_SIZE = 20;
 const DEFAULT_PAGE_SIZE = 5;
@@ -94,7 +94,7 @@ export async function deletePostRecord(id: number) {
     return { error: "Post not found" };
   }
 
-  if (post.authorId !== user.id) {
+  if (!canDeletePost(user, post)) {
     return { error: "You can only delete your own posts" };
   }
 
