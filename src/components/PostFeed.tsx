@@ -1,76 +1,84 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useOptimistic, useTransition } from "react";
 import PostCard from "./PostCard";
 import type { Post, PostCursor } from "@/lib/posts";
+import { deletePost } from "@/lib/actions/posts";
 
 type PostFeedProps = {
   initialPosts: Post[];
   initialCursor: PostCursor | null;
 };
 
-function dedupeById(posts: Post[]): Post[] {
+export default function PostFeed({ initialPosts, initialCursor }: PostFeedProps) {
+  const [extraPosts, setExtraPosts] = useState<Post[]>([]);
+  const [cursor, setCursor] = useState(initialCursor);
+  const [isLoading, setIsLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  const [isPending, startTransition] = useTransition();
+
   const seen = new Set<number>();
-  return posts.filter((post) => {
+  const allPosts = [...initialPosts, ...extraPosts].filter((post) => {
     if (seen.has(post.id)) return false;
     seen.add(post.id);
     return true;
   });
-}
 
-export default function PostFeed({ initialPosts, initialCursor }: PostFeedProps) {
-  const [extraPosts, setExtraPosts] = useState<Post[]>([]);
-  const [removedPostIds, setRemovedPostIds] = useState<Set<number>>(new Set());
-  const [cursor, setCursor] = useState(initialCursor);
-  const [isLoading, setIsLoading] = useState(false);
-  const [error, setError] = useState<string | null>(null);
+  const [optimisticPosts, setOptimisticPosts] = useOptimistic(
+    allPosts,
+    (currentPosts, deletedId: number) =>
+      currentPosts.filter((post) => post.id !== deletedId)
+  );
+
+  function handleDelete(postId: number) {
+    startTransition(async () => {
+      setOptimisticPosts(postId);
+      const formData = new FormData();
+      formData.set("id", String(postId));
+      const result = await deletePost({}, formData);
+      if (result?.error) {
+        setError(result.error);
+      }
+    });
+  }
 
   async function loadMore() {
     if (!cursor) return;
     setIsLoading(true);
     setError(null);
 
-      try {
-    const params = new URLSearchParams({
-      cursorId: String(cursor.id),
-      cursorCreatedAt: cursor.createdAt,
-    });
-    const res = await fetch(`/api/posts?${params}`);
-    if (!res.ok) throw new Error("Failed to load more posts");
+    try {
+      const params = new URLSearchParams({
+        cursorId: String(cursor.id),
+        cursorCreatedAt: cursor.createdAt,
+      });
+      const res = await fetch(`/api/posts?${params}`);
+      if (!res.ok) throw new Error("Failed to load more posts");
 
-    const data: { posts: Post[]; nextCursor: PostCursor | null } = await res.json();
-    setExtraPosts((prev) => dedupeById([...prev, ...data.posts]));
-    setCursor(data.nextCursor);
-  } catch {
-    setError("Couldn't load more posts. Try again.");
-  } finally {
-    setIsLoading(false);
+      const data: { posts: Post[]; nextCursor: PostCursor | null } = await res.json();
+      setExtraPosts((prev) => [...prev, ...data.posts]);
+      setCursor(data.nextCursor);
+    } catch {
+      setError("Couldn't load more posts. Try again.");
+    } finally {
+      setIsLoading(false);
+    }
   }
-}
-
-  function handleDeletedPost(postId: number) {
-    setRemovedPostIds((prev) => {
-      const next = new Set(prev);
-      next.add(postId);
-      return next;
-    });
-    setExtraPosts((prev) => prev.filter((post) => post.id !== postId));
-  }
-
-  const allPosts = dedupeById([...initialPosts, ...extraPosts]).filter(
-    (post) => !removedPostIds.has(post.id)
-  );
 
   return (
     <div>
       <div className="mt-6 flex flex-col gap-4">
-        {allPosts.map((post) => (
-          <PostCard key={post.id} post={post} onDeleted={handleDeletedPost} />
+        {optimisticPosts.map((post) => (
+          <PostCard key={post.id} post={post} onDelete={handleDelete} isPending={isPending} />
         ))}
       </div>
       {error && <p className="text-sm text-red-400 mt-2">{error}</p>}
       {cursor && (
-        <button onClick={loadMore} disabled={isLoading} className="mt-4 w-full rounded bg-neutral-800 py-2 text-neutral-200 disabled:opacity-50">
+        <button
+          onClick={loadMore}
+          disabled={isLoading}
+          className="mt-4 w-full rounded bg-neutral-800 py-2 text-neutral-200 disabled:opacity-50"
+        >
           {isLoading ? "Loading..." : "Load more"}
         </button>
       )}
