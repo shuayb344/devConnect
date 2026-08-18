@@ -3,6 +3,8 @@
 import { z } from "zod";
 import { revalidatePath } from "next/cache";
 import { createPostRecord, deletePostRecord } from "@/lib/posts";
+import { createPostRateLimit } from "@/lib/rate-limit";
+import { requireUser } from "../dal";
 
 const CreatePostSchema = z.object({
   title: z
@@ -27,6 +29,12 @@ export async function createPost(
   }
 
     try {
+    const user = await requireUser();
+
+    const { success } = await createPostRateLimit.limit(user.id);
+    if (!success) {
+      return { error: "You're posting too quickly. Try again later." };
+    }
     await createPostRecord({ title: parsed.data.title });
   } catch {
     return { error: "You must be logged in to create a post." };
