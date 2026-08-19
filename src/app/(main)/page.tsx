@@ -1,17 +1,14 @@
 import { Suspense } from "react";
-import CreatePostForm from "@/components/CreatePostForm";
 import PostFeed from "@/components/PostFeed";
 import PostCardSkeleton from "@/components/PostCardSkeleton";
 import { getPaginatedPosts } from "@/lib/posts";
+import { getCurrentUser } from "@/lib/dal";
 
 export default function HomePage() {
   return (
     <main className="mx-auto max-w-2xl px-4 py-8">
       <h1 className="text-2xl font-bold text-neutral-100">DevConnect</h1>
       <p className="mt-1 text-neutral-400">Welcome to the feed.</p>
-      <div className="mt-6">
-        <CreatePostForm />
-      </div>
       <Suspense fallback={<FeedSkeleton />}>
         <FeedContent />
       </Suspense>
@@ -20,9 +17,17 @@ export default function HomePage() {
 }
 
 async function FeedContent() {
-  const { posts, nextCursor } = await getPaginatedPosts();
-  const feedKey = `${posts[0]?.id ?? "empty"}-${posts.length}-${nextCursor?.id ?? "end"}`;
-  return <PostFeed key={feedKey} initialPosts={posts} initialCursor={nextCursor} />;
+  const [{ posts, nextCursor }, user] = await Promise.all([
+    getPaginatedPosts(),
+    getCurrentUser(),
+  ]);
+
+  return (
+    <>
+     
+    <PostFeed initialPosts={posts} initialCursor={nextCursor} username={user?.username ?? ""} isLoggedIn={!!user} />
+    </>
+  );
 }
 
 function FeedSkeleton() {
