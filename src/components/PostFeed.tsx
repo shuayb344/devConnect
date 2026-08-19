@@ -2,21 +2,28 @@
 
 import { useState, useOptimistic, useTransition } from "react";
 import PostCard from "./PostCard";
+import CreatePostForm from "./CreatePostForm";
 import type { Post, PostCursor } from "@/lib/posts";
-import { deletePost } from "@/lib/actions/posts";
+import { deletePost, createPost } from "@/lib/actions/posts";
 
 type PostFeedProps = {
   initialPosts: Post[];
   initialCursor: PostCursor | null;
+  username: string;
+  isLoggedIn: boolean;
 };
 
-export default function PostFeed({ initialPosts, initialCursor }: PostFeedProps) {
+type OptimisticAction =
+  | { type: "delete"; id: number }
+  | { type: "add"; post: Post };
+
+export default function PostFeed({ initialPosts, initialCursor, username, isLoggedIn }: PostFeedProps) {
   const [extraPosts, setExtraPosts] = useState<Post[]>([]);
   const [cursor, setCursor] = useState(initialCursor);
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [isPending, startTransition] = useTransition();
-
+  
   const seen = new Set<number>();
   const allPosts = [...initialPosts, ...extraPosts].filter((post) => {
     if (seen.has(post.id)) return false;
@@ -24,18 +31,43 @@ export default function PostFeed({ initialPosts, initialCursor }: PostFeedProps)
     return true;
   });
 
-  const [optimisticPosts, setOptimisticPosts] = useOptimistic(
+  const [optimisticPosts, dispatchOptimistic] = useOptimistic(
     allPosts,
-    (currentPosts, deletedId: number) =>
-      currentPosts.filter((post) => post.id !== deletedId)
+    (currentPosts, action: OptimisticAction) => {
+      if (action.type === "delete") {
+        return currentPosts.filter((post) => post.id !== action.id);
+      }
+      
+      return [action.post, ...currentPosts];
+    }
   );
 
   function handleDelete(postId: number) {
     startTransition(async () => {
-      setOptimisticPosts(postId);
+      dispatchOptimistic({ type: "delete", id: postId });
       const formData = new FormData();
       formData.set("id", String(postId));
       const result = await deletePost({}, formData);
+      if (result?.error) {
+        setError(result.error);
+      }
+    });
+  }
+
+  function handleCreate(title: string) {
+    startTransition(async () => {
+   
+      const tempPost: Post = {
+        id: -Date.now(),
+        title,
+        authorUsername: username,
+        createdAt: new Date().toISOString(),
+      };
+      dispatchOptimistic({ type: "add", post: tempPost });
+
+      const formData = new FormData();
+      formData.set("title", title);
+      const result = await createPost({}, formData);
       if (result?.error) {
         setError(result.error);
       }
@@ -67,6 +99,11 @@ export default function PostFeed({ initialPosts, initialCursor }: PostFeedProps)
 
   return (
     <div>
+      {isLoggedIn && (
+        <div className="mt-6">
+          <CreatePostForm onCreate={handleCreate} isPending={isPending} />
+        </div>
+      )}
       <div className="mt-6 flex flex-col gap-4">
         {optimisticPosts.map((post) => (
           <PostCard key={post.id} post={post} onDelete={handleDelete} isPending={isPending} />

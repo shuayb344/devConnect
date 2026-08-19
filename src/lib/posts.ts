@@ -63,9 +63,7 @@ export async function getCachedPosts(): Promise<Post[]> {
     include: { author: { select: { username: true } } },
   });
 
-  // Reshape Prisma's nested { author: { username } } into the flat
-  // shape PostCard already expects — keeps the DB structure decoupled
-  // from the UI's data contract.
+  
   return posts.map((post) => ({
     id: post.id,
     title: post.title,
